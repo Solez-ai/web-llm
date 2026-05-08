@@ -128,6 +128,7 @@ export class ServiceWorkerMLCEngineHandler extends WebWorkerMLCEngineHandler {
             progress: 1,
             timeElapsed: 0,
             text: "Finish loading on " + gpuLabel,
+            stage: "initialize",
           });
           onComplete?.(null);
           return null;

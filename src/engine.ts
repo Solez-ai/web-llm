@@ -55,6 +55,7 @@ import {
   findModelRecord,
   getModelIdToUse,
   getToolCallFromOutputMessage,
+  normalizeInitProgressReport,
 } from "./support";
 import {
   ConfigurationNotInitializedError,
@@ -334,7 +335,10 @@ export class MLCEngine implements MLCEngineInterface {
     );
 
     if (this.initProgressCallback !== undefined) {
-      tvm.registerInitProgressCallback(this.initProgressCallback);
+      const cb = this.initProgressCallback;
+      tvm.registerInitProgressCallback((report) => {
+        cb(normalizeInitProgressReport(report));
+      });
     }
 
     // detect GPU
@@ -416,6 +420,7 @@ export class MLCEngine implements MLCEngineInterface {
         progress: 1,
         timeElapsed: (tend - tstart) / 1e3,
         text: text,
+        stage: "initialize",
       });
     }
     if (deviceLostInReload) {

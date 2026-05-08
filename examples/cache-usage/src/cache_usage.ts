@@ -9,7 +9,11 @@ function setLabel(id: string, text: string) {
 }
 
 const initProgressCallback = (report: webllm.InitProgressReport) => {
-  setLabel("init-label", report.text);
+  const stage = report.stage ? `[${report.stage}] ` : "";
+  const percent = Number.isFinite(report.progress)
+    ? `${Math.round(report.progress * 100)}% `
+    : "";
+  setLabel("init-label", `${stage}${percent}${report.text}`.trim());
 };
 
 async function main() {

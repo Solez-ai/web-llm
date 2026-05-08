@@ -11,6 +11,7 @@ import {
   getModelIdToUse,
   getChunkedPrefillInputData,
   getTopProbs,
+  normalizeInitProgressReport,
 } from "../src/support";
 import { areChatOptionsListEqual } from "../src/utils";
 import { MLCEngine } from "../src/engine";
@@ -481,5 +482,44 @@ describe("Test CustomLock", () => {
     }
     await Promise.all([addOne(), addOne(), addOne(), addOne(), addOne()]);
     expect(value).toEqual(5); // without a lock, most likely less than 5
+  });
+});
+
+describe("normalizeInitProgressReport", () => {
+  test("infers cache-load stage and computes progress from shard counts", () => {
+    const report = {
+      progress: 0,
+      timeElapsed: 0,
+      text: "Loading model from cache [3/12]",
+    };
+    const normalized = normalizeInitProgressReport(report as any);
+    expect(normalized.stage).toBe("cache-load");
+    expect(normalized.current).toBe(3);
+    expect(normalized.total).toBe(12);
+    expect(normalized.progress).toBeCloseTo(0.25);
+  });
+
+  test("infers download stage and preserves non-zero progress", () => {
+    const report = {
+      progress: 0.3,
+      timeElapsed: 0,
+      text: "Downloading model weights [3/10]",
+    };
+    const normalized = normalizeInitProgressReport(report as any);
+    expect(normalized.stage).toBe("download");
+    expect(normalized.progress).toBeCloseTo(0.3);
+    expect(normalized.current).toBe(3);
+    expect(normalized.total).toBe(10);
+  });
+
+  test("defaults to initialize stage when no keyword exists", () => {
+    const report = {
+      progress: 0.5,
+      timeElapsed: 0,
+      text: "Compiling pipelines...",
+    };
+    const normalized = normalizeInitProgressReport(report as any);
+    expect(normalized.stage).toBe("initialize");
+    expect(normalized.progress).toBeCloseTo(0.5);
   });
 });

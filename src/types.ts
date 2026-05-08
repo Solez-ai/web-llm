@@ -23,12 +23,17 @@ export interface InitProgressReport {
   progress: number;
   timeElapsed: number;
   text: string;
+  stage?: InitProgressStage;
+  current?: number;
+  total?: number;
 }
 
 /**
  * Callbacks used to report initialization process.
  */
 export type InitProgressCallback = (report: InitProgressReport) => void;
+
+export type InitProgressStage = "download" | "cache-load" | "initialize";
 
 /**
  * A stateful logitProcessor used to post-process logits after forwarding the input and before

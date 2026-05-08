@@ -6,6 +6,7 @@ import {
   ChatCompletionContentPartImage,
   ChatCompletionMessageToolCall,
 } from "./openai_api_protocols/index";
+import { InitProgressReport, InitProgressStage } from "./types";
 import {
   ModelNotFoundError,
   ModelNotLoadedError,
@@ -94,6 +95,49 @@ export function cleanModelUrl(modelUrl: string): string {
   if (!modelUrl.match(/.+\/resolve\/.+\//)) modelUrl += "resolve/main/";
   // https://huggingface.co/USER/MODEL/ -> https://huggingface.co/USER/MODEL/resolve/main/
   return new URL(modelUrl).href;
+}
+
+export function normalizeInitProgressReport(
+  report: InitProgressReport,
+): InitProgressReport {
+  const text = report.text ?? "";
+  const textLower = text.toLowerCase();
+  const stage: InitProgressStage =
+    report.stage ??
+    (textLower.includes("cache")
+      ? "cache-load"
+      : textLower.includes("download") || textLower.includes("fetch")
+        ? "download"
+        : "initialize");
+
+  let current = report.current;
+  let total = report.total;
+  if (current === undefined || total === undefined) {
+    const match = text.match(/\[(\d+)\s*\/\s*(\d+)\]/);
+    if (match) {
+      current = Number(match[1]);
+      total = Number(match[2]);
+    }
+  }
+
+  let progress = report.progress;
+  if (
+    stage === "cache-load" &&
+    progress === 0 &&
+    current !== undefined &&
+    total !== undefined &&
+    total > 0
+  ) {
+    progress = Math.min(1, Math.max(0, current / total));
+  }
+
+  return {
+    ...report,
+    progress,
+    stage,
+    current,
+    total,
+  };
 }
 
 // Constants for Hermes-2-Pro models function calling
